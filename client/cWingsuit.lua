@@ -152,6 +152,13 @@ function Wingsuit:DrawWings()
 		bones.ragdoll_LeftUpLeg.position, 
 		color
 	)
+
+	Render:FillTriangle(
+		bones.ragdoll_LeftLeg.position, 
+		bones.ragdoll_RightLeg.position,
+		bones.ragdoll_Hips.position, 
+		color
+	)
 	
 	Render:DrawLine(
 		bones.ragdoll_RightForeArm.position,
@@ -162,6 +169,12 @@ function Wingsuit:DrawWings()
 	Render:DrawLine(
 		bones.ragdoll_LeftForeArm.position,
 		bones.ragdoll_LeftUpLeg.position,
+		Color.Black
+	)
+
+	Render:DrawLine(
+		bones.ragdoll_LeftLeg.position,
+		bones.ragdoll_RightLeg.position,
 		Color.Black
 	)
 
@@ -190,11 +203,17 @@ function Wingsuit:SetVelocity()
 	else
 	
 		self.speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 0.25 - 0.03
+		if self.speed > self.max_speed_real then
+			self.speed = self.max_speed_real - 1
+		end
 		LocalPlayer:SetLinearVelocity((LocalPlayer:GetAngle() * Vector3(0, 0, -self.speed)) + Vector3(0, -2.4, 0))		
 	
 	end
 	
 	local speed = LocalPlayer:GetLinearVelocity():Length() * 3.6
+	if speed > self.max_speed_real * 3.6 then
+		speed = self.max_speed_real * 3.6
+	end
 	local player_pos = LocalPlayer:GetPosition()
 	local altitude = player_pos.y - (math.max(200, Physics:GetTerrainHeight(player_pos)))
 	local hud_str = string.format("%i km/h   %i m", speed, altitude)
@@ -265,15 +284,17 @@ function Wingsuit:Glide()
 
 	if not self.hit then
 
-		if Input:GetValue(Action.MoveBackward) > 0 and LocalPlayer:GetAngle().pitch > 0 and LocalPlayer:GetLinearVelocity():Length() <= 20 then
+		if LocalPlayer:GetAngle().pitch > -0.125 and LocalPlayer:GetLinearVelocity():Length() <= self.min_speed_real then
 			Input:SetValue(Action.MoveBackward, 0)
 			Input:SetValue(Action.MoveForward, 1)
 		end
 	
 	else
-	
-		Input:SetValue(Action.MoveBackward, 0.9)
-		
+
+		if Input:GetValue(Action.MoveBackward) < 0.1 then	
+			Input:SetValue(Action.MoveBackward, 0.1)
+		end
+
 		if self.yaw < 0 then
 			Input:SetValue(Action.MoveLeft, -self.yaw_gain * self.yaw)
 		elseif self.yaw > 0 then
@@ -299,7 +320,7 @@ function Wingsuit:Input(args)
 		LocalPlayer:SetLeftArmState(399)
 		
 		self.timers.grapple = Timer()
-		local direction = Angle(angle.yaw, 0, 0) * Vector3(-angle.roll, -0.3, -1)
+		local direction = Camera:GetAngle() * Vector3.Forward
 		
 		self.effect = ClientEffect.Create(AssetLocation.Game, {
 			effect_id = 11,
@@ -326,8 +347,7 @@ function Wingsuit:Input(args)
 
 				if ray.distance < distance - 0.1 and ray.position.y > 199  then
 					self.hit = ray.position
-					self.speed = self.speed + 4
-					self.vertical_speed = -self.vertical_speed
+					self.speed = self.speed + 10
 				end
 
 				if dt > 500 then self:EndGrapple() end
@@ -365,9 +385,7 @@ function Wingsuit:EndGrapple()
 	self.subs.grapple = nil
 	self.hit = nil
 	self.yaw = 0
-	self.vertical_speed = self.default_vertical_speed
-	self.speed = self.default_speed
-
+	
 end
 
 function Wingsuit:Abort()
