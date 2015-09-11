@@ -11,6 +11,9 @@ function Wingsuit:__init()
 	
 	self.max_speed = 300 -- 300 m/s default, for superman mode
 	self.min_speed = 1 -- 1 m/s default, for superman mode
+
+	self.max_speed_real = 92.64
+	self.min_speed_real = 24.35
 	
 	self.tether_length = 150 -- meters
 	self.yaw_gain = 1.5
@@ -71,7 +74,10 @@ function Wingsuit:Activate(args)
 			if self.whitelist.animations[bs] then
 				
 				self.timers.camera_start = Timer()
-				self.speed = self.default_speed
+				self.speed = LocalPlayer:GetLinearVelocity():Length()
+				if self.speed < self.min_speed/2 then
+					self.speed = self.min_speed * 3/4
+				end
 				LocalPlayer:SetBaseState(AnimationState.SSkydive)
 				self.subs.wings = Events:Subscribe("GameRender", self, self.DrawWings)
 				self.subs.velocity = Events:Subscribe("Render", self, self.SetVelocity)
@@ -183,9 +189,8 @@ function Wingsuit:SetVelocity()
 		
 	else
 	
-		local speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 20
-		LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 0, -speed) 
-			+ Vector3(0, self.vertical_speed, 0))		
+		self.speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 0.25 - 0.03
+		LocalPlayer:SetLinearVelocity((LocalPlayer:GetAngle() * Vector3(0, 0, -self.speed)) + Vector3(0, -2.4, 0))		
 	
 	end
 	
@@ -260,8 +265,9 @@ function Wingsuit:Glide()
 
 	if not self.hit then
 
-		if Input:GetValue(Action.MoveBackward) > 0 and LocalPlayer:GetAngle().pitch > 0 then
+		if Input:GetValue(Action.MoveBackward) > 0 and LocalPlayer:GetAngle().pitch > 0 and LocalPlayer:GetLinearVelocity():Length() <= 20 then
 			Input:SetValue(Action.MoveBackward, 0)
+			Input:SetValue(Action.MoveForward, 1)
 		end
 	
 	else
