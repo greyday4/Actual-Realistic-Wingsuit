@@ -1,5 +1,5 @@
 # JC2MP-Wingsuit
-Wingsuit script for Just Cause 2 Multiplayer. Showcases client-sided, player velocities and depth-tested rendering.
+Wingsuit script for Just Cause 2 Multiplayer. Is actually relatively realistic.
 
 If superman mode is not enabled:
 - Double-tap Shift to activate while skydiving or parachuting. Double-tap Ctrl to deactive,
